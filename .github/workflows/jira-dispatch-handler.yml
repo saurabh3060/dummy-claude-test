@@ -1,6 +1,6 @@
 on:
   repository_dispatch:
-    types: [jira_ticket_update]
+    types: [jira_ticket_update1]
 
 permissions:
   contents: write
