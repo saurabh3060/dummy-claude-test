@@ -1,0 +1,14 @@
+name: Jira Dispatch Handler
+
+on:
+  repository_dispatch:
+    types: [jira_ticket_update]
+
+jobs:
+  handle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show Jira data
+        run: |
+          echo "Issue key: ${{ github.event.client_payload.jira_issue_key }}"
+          echo "Description: ${{ github.event.client_payload.jira_description }}"
