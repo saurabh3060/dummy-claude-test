@@ -1,14 +1,25 @@
-name: Jira Dispatch Handler
-
 on:
   repository_dispatch:
     types: [jira_ticket_update]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   handle:
     runs-on: ubuntu-latest
     steps:
-      - name: Show Jira data
+      - uses: actions/checkout@v4
+
+      - name: Make a change
         run: |
-          echo "Issue key: ${{ github.event.client_payload.jira_issue_key }}"
-          echo "Description: ${{ github.event.client_payload.jira_description }}"
+          echo "Issue key: ${{ github.event.client_payload.issue_key }}" > jira.txt
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update from Jira"
+          title: "Jira update for ${{ github.event.client_payload.issue_key }}"
+          body: "Automated change from Jira ticket"
