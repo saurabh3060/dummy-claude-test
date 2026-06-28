@@ -13,11 +13,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -30,7 +28,7 @@ jobs:
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 
-      - name: Start Ollama Server
+      - name: Start Ollama
         run: |
           ollama serve > ollama.log 2>&1 &
           sleep 10
@@ -40,8 +38,7 @@ jobs:
           ollama pull qwen2.5-coder:7b
 
       - name: Run AI Agent
-        run: |
-          python scripts/agent.py
+        run: python scripts/agent.py
         env:
           ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
           ISSUE_SUMMARY: ${{ github.event.client_payload.summary }}
@@ -51,20 +48,12 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: ai-fix-${{ github.run_id }}
-          commit-message: |
-            AI Fix for ${{ github.event.client_payload.issue_key }}
-
-          title: |
-            AI Fix: ${{ github.event.client_payload.issue_key }}
-
+          commit-message: AI changes for ${{ github.event.client_payload.issue_key }}
+          title: AI Fix - ${{ github.event.client_payload.issue_key }}
           body: |
-            ## AI Generated Pull Request
+            Automatically generated from Jira.
 
-            Jira Ticket: ${{ github.event.client_payload.issue_key }}
+            Ticket: ${{ github.event.client_payload.issue_key }}
 
             Summary:
             ${{ github.event.client_payload.summary }}
-
-            Generated automatically using Ollama.
-
-          delete-branch: true
