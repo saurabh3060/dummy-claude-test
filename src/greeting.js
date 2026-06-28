@@ -1,6 +1,13 @@
+```javascript
 function getGreeting(name = "World") {
   return `Hello, ${name}!`;
 }
 
 console.log(getGreeting());
-export { getGreeting };
+
+function sayGoodbye() {
+  return 'Goodbye!';
+}
+
+export { getGreeting, sayGoodbye };
+```
