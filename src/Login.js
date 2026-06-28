@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
 
-function Login() {
+function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [redirected, setRedirected] = useState(false);
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log(`Username: ${username}, Password: ${password}`);
+    if (!username || !password) return;
+    // Simulate redirect to standard page
+    console.log(`Redirecting user from login screen with username: ${username} and password: ${password}`);
+    setRedirected(true);
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor='username'>Username:</label>
-      <input type='text' id='username' value={username} onChange={(event) => setUsername(event.target.value)} />
+      <label>
+        Username:
+        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+      </label>
       <br />
-      <label htmlFor='password'>Password:</label>
-      <input type='password' id='password' value={password} onChange={(event) => setPassword(event.target.value)} />
+      <label>
+        Password:
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </label>
       <br />
-      <button type='submit'>Login</button>
+      <button type="submit">Login</button>
     </form>
   );
 }
 
-export default Login;
+export default LoginPage;
