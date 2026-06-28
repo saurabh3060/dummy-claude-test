@@ -1,24 +1,65 @@
 import os
+import json
 import requests
 
-# Read Jira details from GitHub Action
+OLLAMA_URL = "http://localhost:11434/api/generate"
+MODEL = "qwen2.5-coder:7b"
+
 issue_key = os.getenv("ISSUE_KEY", "NO-KEY")
 summary = os.getenv("ISSUE_SUMMARY", "")
 description = os.getenv("ISSUE_DESCRIPTION", "")
 
-print(f"Processing Jira Ticket: {issue_key}")
-print(f"Summary: {summary}")
+print(f"Processing {issue_key}")
 
-# File to modify
-file_path = "src/greeting.js"
+# ------------------------------------------
+# Read repository files
+# ------------------------------------------
 
-# Read existing code
-with open(file_path, "r", encoding="utf-8") as f:
-    current_code = f.read()
+repo_context = []
 
-# Build prompt
+EXCLUDED_DIRS = {
+    ".git",
+    ".github",
+    "node_modules",
+    "__pycache__",
+    ".venv"
+}
+
+EXCLUDED_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif",
+    ".pdf", ".zip", ".exe"
+}
+
+for root, dirs, files in os.walk("."):
+    dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+
+    for file in files:
+
+        ext = os.path.splitext(file)[1]
+
+        if ext in EXCLUDED_EXTENSIONS:
+            continue
+
+        path = os.path.join(root, file)
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            repo_context.append({
+                "path": path,
+                "content": content[:8000]   # avoid huge prompts
+            })
+
+        except Exception:
+            pass
+
+# ------------------------------------------
+# Prompt
+# ------------------------------------------
+
 prompt = f"""
-You are a senior JavaScript developer.
+You are an expert software engineer.
 
 Jira Ticket: {issue_key}
 
@@ -28,43 +69,90 @@ Summary:
 Description:
 {description}
 
-Current file path:
-{file_path}
+Repository files:
 
-Current source code:
+{json.dumps(repo_context, indent=2)}
 
-{current_code}
+Your task:
 
-Task:
-Update the code according to the Jira ticket.
+1. Analyze the Jira ticket.
+2. Decide which existing files should be modified.
+3. Create new files if required.
+4. Return ALL required file changes.
+
+IMPORTANT:
+
+Return ONLY valid JSON.
+
+Format:
+
+{{
+  "files": [
+    {{
+      "path": "src/example.js",
+      "content": "full file contents"
+    }},
+    {{
+      "path": "src/newFile.js",
+      "content": "new file contents"
+    }}
+  ]
+}}
 
 Rules:
-1. Keep existing functionality unless ticket requires changes.
-2. Return ONLY raw JavaScript code.
-3. Do not return markdown.
-4. Do not explain anything.
+- Include complete file contents.
+- Do not return markdown.
+- Do not explain.
+- Return valid JSON only.
 """
 
 print("Sending prompt to Ollama...")
 
 response = requests.post(
-    "http://localhost:11434/api/generate",
+    OLLAMA_URL,
     json={
-        "model": "qwen2.5-coder:7b",
+        "model": MODEL,
         "prompt": prompt,
         "stream": False
     },
-    timeout=600
+    timeout=900
 )
 
 response.raise_for_status()
 
-updated_code = response.json()["response"].strip()
+result = response.json()["response"]
 
-print("Received response from Ollama")
+print(result)
 
-# Save updated file
-with open(file_path, "w", encoding="utf-8") as f:
-    f.write(updated_code)
+# ------------------------------------------
+# Parse JSON
+# ------------------------------------------
 
-print(f"{file_path} updated successfully.")
+try:
+    data = json.loads(result)
+
+except json.JSONDecodeError:
+    print("Invalid JSON returned by model")
+    exit(1)
+
+# ------------------------------------------
+# Write files
+# ------------------------------------------
+
+updated = []
+
+for file_info in data.get("files", []):
+
+    path = file_info["path"]
+    content = file_info["content"]
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    updated.append(path)
+
+print("\nUpdated files:")
+for f in updated:
+    print("-", f)
