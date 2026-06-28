@@ -4,23 +4,38 @@ on:
   repository_dispatch:
     types: [jira-ticket]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   ai-dev:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
 
       - name: Install Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 
-      - name: Start Ollama
+      - name: Start Ollama Server
         run: |
-          ollama serve &
+          ollama serve > ollama.log 2>&1 &
           sleep 10
 
-      - name: Pull model
+      - name: Pull Model
         run: |
           ollama pull qwen2.5-coder:7b
 
@@ -31,3 +46,25 @@ jobs:
           ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
           ISSUE_SUMMARY: ${{ github.event.client_payload.summary }}
           ISSUE_DESCRIPTION: ${{ github.event.client_payload.description }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: ai-fix-${{ github.run_id }}
+          commit-message: |
+            AI Fix for ${{ github.event.client_payload.issue_key }}
+
+          title: |
+            AI Fix: ${{ github.event.client_payload.issue_key }}
+
+          body: |
+            ## AI Generated Pull Request
+
+            Jira Ticket: ${{ github.event.client_payload.issue_key }}
+
+            Summary:
+            ${{ github.event.client_payload.summary }}
+
+            Generated automatically using Ollama.
+
+          delete-branch: true
