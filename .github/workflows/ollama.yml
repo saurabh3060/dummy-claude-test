@@ -13,13 +13,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Debug Repository
+        run: |
+          echo "===== CURRENT DIRECTORY ====="
+          pwd
+
+          echo "===== FILES ====="
+          find . -type f | sort
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Python packages
+      - name: Show Python Version
+        run: |
+          python --version
+          pip --version
+
+      - name: Install Python Packages
         run: |
           python -m pip install --upgrade pip
           pip install requests
@@ -28,21 +44,72 @@ jobs:
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 
-      - name: Start Ollama
+      - name: Verify Ollama Install
         run: |
+          ollama --version
+
+      - name: Start Ollama Server
+        run: |
+          echo "Starting Ollama..."
           ollama serve > ollama.log 2>&1 &
           sleep 10
 
+          echo "Checking Ollama process"
+          ps -ef | grep ollama
+
+      - name: Wait for Ollama
+        run: |
+          echo "Waiting for Ollama API..."
+
+          for i in {1..30}; do
+            if curl -s http://localhost:11434 > /dev/null; then
+              echo "Ollama is ready"
+              exit 0
+            fi
+
+            echo "Waiting... attempt $i"
+            sleep 2
+          done
+
+          echo "Ollama failed to start"
+
+          cat ollama.log
+
+          exit 1
+
       - name: Pull Model
         run: |
-          ollama pull qwen2.5-coder:7b
+          echo "Pulling model..."
+          ollama pull qwen2.5:3b
+
+      - name: List Installed Models
+        run: |
+          ollama list
+
+      - name: Test Ollama
+        run: |
+          curl http://localhost:11434/api/generate \
+            -d '{
+              "model":"qwen2.5:3b",
+              "prompt":"Say hello",
+              "stream":false
+            }'
 
       - name: Run AI Agent
-        run: python scripts/agent.py
+        run: |
+          python scripts/agent.py
         env:
           ISSUE_KEY: ${{ github.event.client_payload.issue_key }}
           ISSUE_SUMMARY: ${{ github.event.client_payload.summary }}
           ISSUE_DESCRIPTION: ${{ github.event.client_payload.description }}
+
+      - name: Show Git Changes
+        run: |
+          echo "===== GIT STATUS ====="
+          git status
+
+          echo "===== GIT DIFF ====="
+          git diff || true
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
@@ -53,7 +120,13 @@ jobs:
           body: |
             Automatically generated from Jira.
 
-            Ticket: ${{ github.event.client_payload.issue_key }}
+            Ticket:
+            ${{ github.event.client_payload.issue_key }}
 
             Summary:
             ${{ github.event.client_payload.summary }}
+
+            Description:
+            ${{ github.event.client_payload.description }}
+
+          delete-branch: true
