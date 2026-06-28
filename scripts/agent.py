@@ -1,48 +1,70 @@
 import os
 import requests
 
-# Read Jira issue from workflow env variables
+# Read Jira details from GitHub Action
+issue_key = os.getenv("ISSUE_KEY", "NO-KEY")
 summary = os.getenv("ISSUE_SUMMARY", "")
 description = os.getenv("ISSUE_DESCRIPTION", "")
 
-# Read existing file
-with open("src/greeting.js", "r") as f:
+print(f"Processing Jira Ticket: {issue_key}")
+print(f"Summary: {summary}")
+
+# File to modify
+file_path = "src/greeting.js"
+
+# Read existing code
+with open(file_path, "r", encoding="utf-8") as f:
     current_code = f.read()
 
-# PROMPT GOES HERE
+# Build prompt
 prompt = f"""
 You are a senior JavaScript developer.
 
-Jira Issue Summary:
+Jira Ticket: {issue_key}
+
+Summary:
 {summary}
 
-Jira Issue Description:
+Description:
 {description}
 
-Current file: src/greeting.js
+Current file path:
+{file_path}
 
-Existing code:
+Current source code:
 
 {current_code}
 
-Update the code to satisfy the Jira requirement.
+Task:
+Update the code according to the Jira ticket.
 
-Return ONLY the complete updated JavaScript file.
+Rules:
+1. Keep existing functionality unless ticket requires changes.
+2. Return ONLY raw JavaScript code.
+3. Do not return markdown.
+4. Do not explain anything.
 """
+
+print("Sending prompt to Ollama...")
 
 response = requests.post(
     "http://localhost:11434/api/generate",
     json={
-        "model": "llama3.2:3b",
+        "model": "qwen2.5-coder:7b",
         "prompt": prompt,
         "stream": False
-    }
+    },
+    timeout=600
 )
 
-updated_code = response.json()["response"]
+response.raise_for_status()
 
-# Save modified file
-with open("src/greeting.js", "w") as f:
+updated_code = response.json()["response"].strip()
+
+print("Received response from Ollama")
+
+# Save updated file
+with open(file_path, "w", encoding="utf-8") as f:
     f.write(updated_code)
 
-print("File updated successfully")
+print(f"{file_path} updated successfully.")
