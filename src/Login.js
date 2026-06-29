@@ -13,6 +13,11 @@ function LoginPage() {
     setRedirected(true);
   };
 
+  const handleLogout = () => {
+    // Simulate logout action
+    console.log('User logged out.');
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <label>
@@ -27,6 +32,7 @@ function LoginPage() {
       <br />
       <button type="submit">Login</button>
     </form>
+    <button onClick={handleLogout}>Logout</button>
   );
 }
 
