@@ -34,7 +34,6 @@ function LoginPage() {
       <br />
       <button onClick={handleLoginClick}>Login</button>
     </form>
-    <button onClick={handleLogout}>Logout</button>
   );
 }
 
