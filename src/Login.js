@@ -13,10 +13,12 @@ function LoginPage() {
     setRedirected(true);
   };
 
-  const handleLogout = () => {
-    // Simulate logout action
-    console.log('User logged out.');
-  }
+  const handleLoginClick = () => {
+    if (!username || !password) return;
+    // Actual redirection to dashboard page
+    console.log(`User redirected to dashboard with username: ${username}, password: ${password}`);
+    setRedirected(true);
+  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -30,7 +32,7 @@ function LoginPage() {
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </label>
       <br />
-      <button type="submit">Login</button>
+      <button onClick={handleLoginClick}>Login</button>
     </form>
     <button onClick={handleLogout}>Logout</button>
   );
