@@ -29,3 +29,7 @@ button {
 button:hover {
   background-color: #0056b3;
 }
+
+button.login-button {
+  margin-top: 20px; /* Add more space between login button and other elements */
+}
