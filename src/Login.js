@@ -8,14 +8,12 @@ function LoginPage() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!username || !password) return;
-    // Simulate redirect to standard page
     console.log(`Redirecting user from login screen with username: ${username} and password: ${password}`);
     setRedirected(true);
   };
 
   const handleLoginClick = () => {
     if (!username || !password) return;
-    // Actual redirection to dashboard page
     console.log(`User redirected to dashboard with username: ${username}, password: ${password}`);
     setRedirected(true);
   };
@@ -34,7 +32,6 @@ function LoginPage() {
       <br />
       <button onClick={handleLoginClick}>Login</button>
     </form>
-    <button onClick={handleLogout}>Logout</button>
   );
 }
 
