@@ -1,4 +1,3 @@
-```javascript
 function getGreeting(name = "World") {
   return `Hello, ${name}!`;
 }
@@ -10,4 +9,3 @@ function sayGoodbye() {
 }
 
 export { getGreeting, sayGoodbye };
-```
